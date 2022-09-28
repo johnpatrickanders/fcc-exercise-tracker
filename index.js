@@ -81,14 +81,9 @@ app.post('/api/users/:_id/exercises', async (req,res) => {
 })
 
 app.get('/api/users/:_id/logs/:from?/:to?/:limit?', async (req, res) => {
-  console.log(req.query.from, req.query.to, req.query.limit)
   let from = req.query.from ? Date.parse(req.query.from) : Date.parse('0001-01-01');
   let to = req.query.to ? Date.parse(req.query.to) : Date.parse('9999-12-31');
   let limit = Number(req.query.limit) || 10000;
-  console.log(from, to)
-  // let dFrom = req.query.from || '0000-00-00';
-  // let dTo = req.query.to || '9999-99-99';
-  // let limit = +req.query.limit || 10000;
   
   let user =  await User.findOne({
     _id: req.params._id
@@ -99,20 +94,23 @@ app.get('/api/users/:_id/logs/:from?/:to?/:limit?', async (req, res) => {
     for(let exercise of user.exercises){
       if(exercise['date']){
         let log = {
-            description: exercise.description,
-            duration: exercise.duration,
+            description: String(exercise.description),
+            duration: Number(exercise.duration),
             date: exercise.date.toDateString(),
-          }
-        console.log(limit > 0 && from <= Date.parse(exercise.date)
-                && Date.parse(exercise.date) <= to)
+        }
         if(limit > 0 && from <= Date.parse(exercise.date)
                 && Date.parse(exercise.date) <= to){
           logs.push(log);
         } 
         limit -= 1;
-        console.log(log, "---", limit)
-        // if(limit <= 0) break;
       }
+    }
+    if(!logs.length) {
+      logs = [{
+        description: null,
+        duration: null,
+        date: null,
+      }];
     }
     let userLogs = {
       username: user.username,
@@ -120,7 +118,6 @@ app.get('/api/users/:_id/logs/:from?/:to?/:limit?', async (req, res) => {
       _id: String(user._id),
       log: logs
     }
-    console.log(userLogs)
     return res.send(userLogs);
   } catch (error) {
     res.json({
